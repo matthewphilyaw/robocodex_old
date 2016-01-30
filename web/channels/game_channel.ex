@@ -1,37 +1,43 @@
 defmodule Robocodex.GameChannel do
   use Robocodex.Web, :channel
 
+  alias Robocodex.Arena
+  alias Robocodex.Robot
+
   def join("games:lobby", _payload, socket) do
 
-    bots = build_bots
-    {:ok, pid} = Agent.start_link fn -> bots end
+    arena = %Arena{height: 600, width: 600}
+    tank = Robot.new(30, 30) |> Robot.set_velocity({8, :math.pi / 3})
 
-    :timer.send_interval(500, {:run_tick, pid})
+    {:ok, pid} = Agent.start_link fn -> %{arena: arena, tank: tank} end
+
+    :timer.send_interval(trunc(1000/60), {:run_tick, pid})
     {:ok, socket}
   end
 
 
   def handle_info({:run_tick, pid}, socket) do
-    bots = Agent.get pid, fn state -> state end
-    broadcast! socket, "frame", %{ :bots => bots }
+    %{arena: arena, tank: tank} = Agent.get pid, fn state -> state end
 
-    bots = move_bots bots
-    Agent.update pid, fn _ -> bots end
+    {speed, bearing} = tank.velocity
+
+    next_tank = Robot.move tank
+
+    tank = case Arena.hit_wall(next_tank, arena) do
+      # sim reflection but don't apply move
+      true -> tank |> Robot.set_velocity({speed, bearing - :math.pi / 4})
+      false -> next_tank # take the next move
+    end
+
+    broadcast! socket, "frame", %{ :bots => [
+        %{x: tank.center.x,
+          y: tank.center.y,
+          name: "test"}
+      ]
+    }
+
+    Agent.update pid, fn state -> %{state | tank: tank} end
 
     {:noreply, socket}
-  end
-
-  def build_bots do
-    [
-      %{x: 10, y: 10, name: "b1"},
-      %{x: 60, y: 30, name: "b2"},
-      %{x: 140, y: 40, name: "b2"}
-    ]
-  end
-
-  def move_bots(bots) do
-    Enum.map bots, fn b = %{x: x, y: y} ->
-      %{ b | x: x + 10, y: y + 10 }
-    end
   end
 end

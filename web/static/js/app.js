@@ -38,11 +38,11 @@ function draw(bots) {
   if (canvas.getContext) {
     var ctx = canvas.getContext('2d');
 
-    ctx.clearRect(0,0,800,800);
+    ctx.clearRect(0,0,600,600);
     ctx.fillStyle = 'white';
-    ctx.fillRect(0,0,800,800);
+    ctx.fillRect(0,0,600,600);
     ctx.fillStyle = 'black'
-    ctx.strokeRect(0,0,800,800);
+    ctx.strokeRect(0,0,600,600);
 
 
     for (var i = 0; i < bots.length; i++) {
