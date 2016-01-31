@@ -1,26 +1,36 @@
 defmodule Robocodex.Robot do
-  defstruct center: nil, radius: nil, velocity: nil
+  defstruct position: nil, heading: nil, speed: 0, bounding_radius: nil
 
   alias Robocodex.Robot
-  alias Robocodex.Point
+  alias Graphmath.Vec2
 
-  def new(x,y) do
-    %Robot{center: %Robocodex.Point{x: x, y: y}, radius: 20}
+  @bounding_radius 20
+
+  def create(x,y) do
+    %Robot{
+      position: Vec2.create(x,y),
+      # positive y I dont know had to choose something.. *shrugs*
+      heading: Vec2.create(0,1),
+      bounding_radius: @bounding_radius
+    }
   end
 
-  def set_velocity(rb = %Robot{}, vel) do
-    %{rb | velocity: vel}
+  def set_heading_angle(rb = %Robot{}, angle) do
+    %{rb | heading: Vec2.rotate(rb.heading, angle)}
   end
 
-  def move(rb = %Robot{velocity: nil}) do
-    rb
+  def get_heading_angle(rb = %Robot{}) do
+    {x, y} = rb.heading
+    :math.atan2(y, x)
+  end
+
+  def set_speed(rb = %Robot{}, speed) do
+    %{rb | speed: speed}
   end
 
   def move(rb = %Robot{}) do
-    {speed, bearing} = rb.velocity
-    x = rb.center.x + (speed * :math.cos(bearing))
-    y = rb.center.y + (speed * :math.sin(bearing))
+    vel_vec = Vec2.scale rb.heading, rb.speed
 
-    %{rb | center: %Point{x: x, y: y}}
+    %{rb | position: Vec2.add(rb.position, vel_vec)}
   end
 end
